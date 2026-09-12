@@ -90,7 +90,7 @@ class MainActivity:ComponentActivity(){
    Column{Text("Aura Voice Document",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("TECHNICAL COMPANION",fontSize=10.sp,color=Muted,letterSpacing=2.sp)}
    Spacer(Modifier.weight(1f))
    Box(Modifier.size(7.dp).background(if(vm.connected)Mint else Warm,RoundedCornerShape(7.dp)))
-   Spacer(Modifier.width(8.dp));Text(if(vm.connected)"CONNECTED VIA USB" else "DOCUMENTS OFFLINE",fontSize=11.sp,color=Muted,letterSpacing=1.sp)
+   Spacer(Modifier.width(8.dp));Text(if(vm.connected){if(vm.useLan)"CONNECTED VIA WI-FI" else "CONNECTED VIA USB"}else "DOCUMENTS OFFLINE",fontSize=11.sp,color=Muted,letterSpacing=1.sp)
    Spacer(Modifier.width(14.dp));TextButton(onClick={vm.connect()}){Text("Reconnect",color=Mint)}
   }
   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){
@@ -116,6 +116,7 @@ class MainActivity:ComponentActivity(){
  Column(modifier.clip(RoundedCornerShape(20.dp)).background(Panel).border(1.dp,Line,RoundedCornerShape(20.dp)).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
   Row(verticalAlignment=Alignment.CenterVertically){Text("Ask the manual",fontSize=20.sp,fontWeight=FontWeight.SemiBold);Spacer(Modifier.weight(1f));Text("VOICE",fontSize=10.sp,color=Mint,letterSpacing=2.sp)}
   Text(vm.status,fontSize=12.sp,color=if(vm.recording)Warm else Mint)
+  ConnectionSettings(vm)
   vm.review?.let{Text(it,color=Warm,fontSize=12.sp)}
   if(vm.messages.isEmpty()){
    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
@@ -148,6 +149,32 @@ class MainActivity:ComponentActivity(){
    OutlinedButton(onClick={vm.interrupt()},modifier=Modifier.height(52.dp),shape=RoundedCornerShape(13.dp)){Text("Stop",color=Muted)}
   }
   Text(if(vm.recording)"Microphone on · speak naturally, or tap End voice." else "Tap once to talk continuously. Tap again to stop.",fontSize=10.sp,color=Muted)
+ }
+}
+@Composable fun ConnectionSettings(vm:ManualViewModel){
+ var expanded by remember{mutableStateOf(false)}
+ var lan by remember{mutableStateOf(vm.useLan)}
+ var host by remember{mutableStateOf(vm.lanHost)}
+ var port by remember{mutableStateOf(vm.lanPort)}
+ var problem by remember{mutableStateOf<String?>(null)}
+ Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
+  Row(verticalAlignment=Alignment.CenterVertically){
+   Text(vm.connectionLabel,Modifier.weight(1f),fontSize=11.sp,color=Muted)
+   TextButton(onClick={if(!expanded){lan=vm.useLan;host=vm.lanHost;port=vm.lanPort;problem=null};expanded=!expanded}){Text(if(expanded)"Close" else "Connection")}
+  }
+  if(expanded){
+   Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+    FilterChip(selected=!lan,onClick={lan=false;problem=null},label={Text("USB (default)")})
+    FilterChip(selected=lan,onClick={lan=true;problem=null},label={Text("Wi-Fi / LAN")})
+   }
+   if(lan){
+    OutlinedTextField(host,{host=it;problem=null},Modifier.fillMaxWidth(),label={Text("PC local IP address")},placeholder={Text("192.168.1.42")},singleLine=true)
+    OutlinedTextField(port,{port=it;problem=null},Modifier.fillMaxWidth(),label={Text("Port")},singleLine=true)
+    Text("Use the same Wi-Fi as the PC, with its backend in LAN mode.",fontSize=11.sp,color=Muted)
+   }else Text("Uses the PC through USB and ADB forwarding on port 8787.",fontSize=11.sp,color=Muted)
+   problem?.let{Text(it,fontSize=11.sp,color=Warm)}
+   Button(onClick={problem=vm.configureConnection(lan,host,port);if(problem==null)expanded=false}){Text("Save & reconnect")}
+  }
  }
 }
 @Composable fun DocumentPanel(vm:ManualViewModel,modifier:Modifier=Modifier){

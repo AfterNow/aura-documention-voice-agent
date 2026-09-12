@@ -3,7 +3,7 @@
 Working hackathon Android XR voice companion: select one of three products, ask a question, and see the original manual page alongside the conversation. Both spatial panels support movement and resizing.
 
 ## Demo
-1. Keep Aura connected over USB and the backend terminal running.
+1. Keep the backend terminal running. Use USB forwarding by default, or configure Wi-Fi as described below.
 2. Select DB-200H, MLG-202DR, or VSX.
 3. Tap **Start voice** once and speak naturally. Questions are submitted automatically when you finish speaking. The microphone stays on during answers and between questions. Tap **End voice** to stop listening and playback. Allow microphone permission when prompted.
 4. Try “Show me the drain connection diagram” for DB-200H, “Show the component identification drawing” for MLG-202DR, or “Show the cartridge seal instructions” for VSX.
@@ -42,6 +42,15 @@ Set JAVA_HOME to your JDK 21 installation and ANDROID_HOME to your Android SDK d
 
 The backend binds to loopback port 8787. `adb reverse tcp:8787 tcp:8787` connects the app to it. If USB is reconnected, rerun that command and tap Reconnect in the app. The backend must remain running. Offline manual browsing remains available without voice.
 
+## Walk around using Wi-Fi
+1. Connect the Aura puck and PC to the same Wi-Fi network. Keep the glasses connected to the puck; unplug only the PC's USB connection after testing.
+2. Stop the existing backend, then run `./scripts/run-backend.ps1 -Lan`. This listens on port 8787 on the PC's network interfaces and prints their IPv4 addresses. USB loopback still works with this listener.
+3. In the app, open **Connection**, select **Wi-Fi / LAN**, enter the PC's Wi-Fi IPv4 address and port **8787**, then select **Save & reconnect**. The app remembers the mode and address across restarts.
+4. Start voice and verify an answer, then unplug the PC's USB cable. Keep the PC awake and backend running. If the PC address changes, update it in Connection.
+5. To return to USB, select **USB (default)** and **Save & reconnect**, reconnect the cable, and run `adb reverse tcp:8787 tcp:8787`.
+
+Use LAN mode on a trusted local network: this demo connection is unencrypted and unauthenticated. If Windows Firewall prompts for Node access, allow your private network. If connection fails, check firewall access to TCP 8787 and whether the Wi-Fi network blocks communication between devices. Do not expose this demo port to the internet. Starting the script without `-Lan` explicitly returns the backend to loopback-only binding. Changing connections stops the microphone; tap Start voice again after reconnecting.
+
 ## Architecture and scope
 Kotlin / Compose XR renders two spatial panels and original PDFs using Android PdfRenderer. PCM audio and tool events travel over WebSocket through USB forwarding. A Node backend owns OpenAI Realtime credentials, product-scoped lexical retrieval, page images, validated document tools, and a curated DB-200H review. Page display is acknowledged by the client after rendering before the agent reports success.
 
@@ -52,7 +61,7 @@ The pump user alias P500219 maps to supplied manual P5002169 for VSX VSH/VSC/VSC
 ## Validation
 ```powershell
 cd backend
-node --test --test-isolation=none documents.test.mjs voice.test.mjs
+node --test --test-isolation=none documents.test.mjs voice.test.mjs network.test.mjs
 node evaluate-live.mjs
 node --env-file=../.env evaluate-continuous.mjs
 ```
