@@ -6,11 +6,14 @@ REPO="AfterNow/aura-documention-voice-agent"
 def api(endpoint,payload=None,method=None):
  cmd=["gh","api",f"repos/{REPO}/{endpoint}"]
  if payload is not None:cmd += ["--method",method or "POST","--input","-"]
- p=subprocess.run(cmd,input=json.dumps(payload) if payload is not None else None,text=True,capture_output=True,check=True)
+ p=subprocess.run(cmd,input=json.dumps(payload) if payload is not None else None,text=True,capture_output=True)
+ if p.returncode:
+  print(p.stderr)
+  p.check_returncode()
  return json.loads(p.stdout)
 def source_files():
- files=[ROOT/n for n in [".gitignore","README.md","settings.gradle.kts","build.gradle.kts","gradle.properties","gradlew","gradlew.bat","backend/package.json","backend/pnpm-lock.yaml","backend/.env.example","app/build.gradle.kts","app/src/main/AndroidManifest.xml"]]
- for directory,pattern in [("app/src/main/java","*.kt"),("backend","*.mjs"),("scripts","*.py"),("scripts","*.ps1"),("docs","*.md"),("manuals","*.pdf"),("manuals","*.md"),("gradle/wrapper","*")]:
+ files=[ROOT/n for n in [".gitignore","README.md","LICENSE","settings.gradle.kts","build.gradle.kts","gradle.properties","gradlew","gradlew.bat","backend/package.json","backend/pnpm-lock.yaml","backend/.env.example","app/build.gradle.kts","app/src/main/AndroidManifest.xml"]]
+ for directory,pattern in [("app/src/main/java","*.kt"),("app/src/test/java","*.kt"),("backend","*.mjs"),("scripts","*.py"),("scripts","*.ps1"),("docs","*.md"),("manuals","*.pdf"),("manuals","*.md"),("gradle/wrapper","*")]:
   files.extend((ROOT/directory).rglob(pattern))
  return sorted(set(p for p in files if p.is_file()))
 def main():

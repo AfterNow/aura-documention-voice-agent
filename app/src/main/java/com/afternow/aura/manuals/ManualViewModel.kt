@@ -14,6 +14,12 @@ data class Topic(val label:String,val page:Int)
 data class Product(val id:String,val name:String,val kind:String,val maker:String,val file:String,val pageCount:Int,val offset:Int,val topics:List<Topic>)
 data class Message(val who:String,val text:String,val id:String="")
 class ManualViewModel(app:Application):AndroidViewModel(app) {
+    private val preferences=app.getSharedPreferences("backend_connection",Application.MODE_PRIVATE)
+    var useLan by mutableStateOf(preferences.getBoolean("useLan",false));private set
+    var lanHost by mutableStateOf(preferences.getString("host","")?:"");private set
+    var lanPort by mutableStateOf(preferences.getString("port","8787")?:"8787");private set
+    val connectionLabel:String get()=if(useLan)"Wi-Fi · $lanHost:$lanPort" else "USB · ADB loopback"
+    var connectionSettingsOpen by mutableStateOf(false)
     var products by mutableStateOf<List<Product>>(emptyList());private set
     var selected by mutableStateOf<Product?>(null);private set
     var page by mutableIntStateOf(1);private set
@@ -27,7 +33,7 @@ class ManualViewModel(app:Application):AndroidViewModel(app) {
     var renderRequest by mutableStateOf<String?>(null);private set
     val messages=mutableStateListOf<Message>()
     private val main=Handler(Looper.getMainLooper())
-    private val http=OkHttpClient.Builder().readTimeout(0,TimeUnit.MILLISECONDS).pingInterval(20,TimeUnit.SECONDS).build()
+    private val http=OkHttpClient.Builder().connectTimeout(5,TimeUnit.SECONDS).readTimeout(0,TimeUnit.MILLISECONDS).pingInterval(20,TimeUnit.SECONDS).build()
     private var socket:WebSocket?=null
     private var connectionEpoch=0
     val audio=VoiceAudio(app,{send("audio.append", "audio" to it)},{message->main.post{error=message;interrupt()}},{item,ms->send("audio.played","itemId" to item,"audioEndMs" to ms)})
@@ -38,13 +44,20 @@ class ManualViewModel(app:Application):AndroidViewModel(app) {
     }
     private fun parseProducts(a:JSONArray)=List(a.length()){i->val p=a.getJSONObject(i);val t=p.getJSONArray("topics");Product(p.getString("id"),p.getString("name"),p.getString("kind"),p.getString("manufacturer"),p.getString("file"),p.getInt("pageCount"),p.getInt("offset"),List(t.length()){j->Topic(t.getJSONObject(j).getString("label"),t.getJSONObject(j).getInt("page"))})}
     fun connect(){
-        stopRecording(false);audio.clear();val epoch=++connectionEpoch;socket?.close(1000,"Reconnect");connected=false;voiceReady=false;status="Connecting…";error=null
-        socket=http.newWebSocket(Request.Builder().url("ws://127.0.0.1:8787").build(),object:WebSocketListener(){
+        stopRecording(false);audio.clear();val epoch=++connectionEpoch;socket?.cancel();connected=false;voiceReady=false;status="Connecting · $connectionLabel";error=null
+        val address=try{BackendEndpoint.url(useLan,lanHost,lanPort)}catch(e:IllegalArgumentException){status="Connection settings needed";error=e.message;return}
+        socket=http.newWebSocket(Request.Builder().url(address).build(),object:WebSocketListener(){
             override fun onOpen(ws:WebSocket,response:Response){main.post{if(epoch==connectionEpoch){connected=true;status="Connected"}}}
             override fun onMessage(ws:WebSocket,text:String){main.post{if(epoch==connectionEpoch)try{handle(JSONObject(text))}catch(e:Exception){error="Unexpected server message"}}}
-            override fun onFailure(ws:WebSocket,t:Throwable,response:Response?){main.post{if(epoch==connectionEpoch){connected=false;voiceReady=false;status="Offline · manuals available";error="Backend unavailable. Start the server and ADB USB connection.";stopRecording(false)}}}
+            override fun onFailure(ws:WebSocket,t:Throwable,response:Response?){main.post{if(epoch==connectionEpoch){connected=false;voiceReady=false;status="Offline · manuals available";error=if(useLan)"Cannot reach $lanHost:$lanPort. Check the same Wi-Fi network, PC backend LAN mode, and firewall." else "USB backend unavailable. To unplug the PC, open Connection, choose Wi-Fi / LAN, enter the PC IP, and Save & reconnect.";stopRecording(false);audio.clear();if(!useLan)connectionSettingsOpen=true}}}
             override fun onClosed(ws:WebSocket,code:Int,reason:String){main.post{if(epoch==connectionEpoch){connected=false;voiceReady=false;status="Disconnected";stopRecording(false)}}}
         })
+    }
+    fun configureConnection(lan:Boolean,host:String,port:String):String? {
+        try{BackendEndpoint.url(lan,host,port)}catch(e:IllegalArgumentException){return e.message}
+        useLan=lan;lanHost=host.trim();lanPort=port.trim()
+        preferences.edit().putBoolean("useLan",lan).putString("host",lanHost).putString("port",lanPort).apply()
+        connect();return null
     }
     private fun handle(e:JSONObject){when(e.getString("type")){
         "catalog"->{/* Bundled assets determine which documents can be rendered. */}
@@ -70,6 +83,7 @@ class ManualViewModel(app:Application):AndroidViewModel(app) {
     fun toggleRecording(){if(recording)interrupt()else if(voiceReady){error=null;audio.clear();send("audio.start");recording=audio.start();if(!recording)send("audio.stop")}}
     private fun stopRecording(notifyServer:Boolean){if(recording){recording=false;audio.stop();if(notifyServer)send("audio.stop")}}
     fun interrupt(){stopRecording(false);audio.clear();send("interrupt")}
+    fun disconnect(){interrupt();connectionEpoch++;socket?.cancel();socket=null;connected=false;voiceReady=false;status="Disconnected"}
     fun clearError(){error=null}
     private fun send(type:String,vararg fields:Pair<String,Any>){val j=JSONObject().put("type",type);fields.forEach{j.put(it.first,it.second)};socket?.send(j.toString())}
     override fun onCleared(){connectionEpoch++;socket?.close(1000,"App closed");audio.release();http.dispatcher.executorService.shutdown()}

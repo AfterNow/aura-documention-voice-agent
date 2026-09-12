@@ -21,6 +21,7 @@ android {
  buildFeatures { compose = true }
 }
 dependencies {
+ testImplementation("junit:junit:4.13.2")
  implementation("androidx.xr.compose:compose:1.0.0-alpha13")
  implementation(platform("androidx.compose:compose-bom:2025.07.00"))
  implementation("androidx.activity:activity-compose:1.10.1")

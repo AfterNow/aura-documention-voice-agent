@@ -2,8 +2,11 @@
 
 Working hackathon Android XR voice companion: select one of three products, ask a question, and see the original manual page alongside the conversation. Both spatial panels support movement and resizing.
 
+## License
+The project's original source code and documentation are licensed under the [MIT License](LICENSE). The third-party manufacturer PDFs in `manuals/` and their generated derivatives are excluded from this license and retain their respective owners' copyright notices and terms. Third-party dependencies retain their own licenses.
+
 ## Demo
-1. Keep Aura connected over USB and the backend terminal running.
+1. Keep the backend terminal running. Use USB forwarding by default, or configure Wi-Fi as described below.
 2. Select DB-200H, MLG-202DR, or VSX.
 3. Tap **Start voice** once and speak naturally. Questions are submitted automatically when you finish speaking. The microphone stays on during answers and between questions. Tap **End voice** to stop listening and playback. Allow microphone permission when prompted.
 4. Try “Show me the drain connection diagram” for DB-200H, “Show the component identification drawing” for MLG-202DR, or “Show the cartridge seal instructions” for VSX.
@@ -42,8 +45,23 @@ Set JAVA_HOME to your JDK 21 installation and ANDROID_HOME to your Android SDK d
 
 The backend binds to loopback port 8787. `adb reverse tcp:8787 tcp:8787` connects the app to it. If USB is reconnected, rerun that command and tap Reconnect in the app. The backend must remain running. Offline manual browsing remains available without voice.
 
+## Walk around using Wi-Fi
+1. Connect the Aura puck and PC to the same Wi-Fi network. Keep the glasses connected to the puck; unplug only the PC's USB connection after testing.
+2. Stop the existing backend, then run `./scripts/run-backend.ps1 -Lan`. This listens on port 8787 on the PC's network interfaces and prints their IPv4 addresses. USB loopback still works with this listener.
+3. In the app, open **Connection**, select **Wi-Fi / LAN**, enter the PC's Wi-Fi IPv4 address and port **8787**, then select **Save & reconnect**. The app remembers the mode and address across restarts.
+4. Start voice and verify an answer, then unplug the PC's USB cable. Keep the PC awake and backend running. If the PC address changes, update it in Connection.
+5. To return to USB, reconnect the PC cable, wait about three seconds, select **USB (default)**, and select **Save & reconnect**. If already in USB mode, tap **Reconnect**.
+
+The startup script watches connected ADB devices and restores forwarding within about three seconds after a cable reconnect, in both USB and LAN modes. It uses PowerShell 7's Start-ThreadJob and stops the watcher when the backend script exits. Select USB, wait briefly, then tap Reconnect. ADB must be on the PC's PATH and the device must authorize USB debugging. If starting Node directly, run `./scripts/watch-adb.ps1` in another terminal, or use the manual forwarding command above.
+
+If USB reconnect fails, run `adb devices` and confirm the puck is listed as `device`, then run `adb reverse tcp:8787 tcp:8787` and tap Reconnect. Unplugging removes this forwarding rule; selecting USB in the app cannot recreate it on the PC. Wi-Fi mode instead needs the saved PC address and a backend started with `-Lan`. Both connection modes have been confirmed working on the physical Aura device, including USB recovery after restoring the missing rule.
+
+The main header always shows the saved connection mode and has **Connection**, **Reconnect**, and **Close app** controls. Reconnect retries the saved address; it does not switch USB to Wi-Fi automatically. Connection opens a full scrollable settings panel, also opened after a failed USB connection. Close app stops audio, disconnects the backend, and removes the app task; launch Aura Voice Document again from the device's app launcher to restart.
+
+Use LAN mode on a trusted local network: this demo connection is unencrypted and unauthenticated. If Windows Firewall prompts for Node access, allow your private network. If connection fails, check firewall access to TCP 8787 and whether the Wi-Fi network blocks communication between devices. Do not expose this demo port to the internet. Starting the script without `-Lan` explicitly returns the backend to loopback-only binding. Changing connections stops the microphone; tap Start voice again after reconnecting.
+
 ## Architecture and scope
-Kotlin / Compose XR renders two spatial panels and original PDFs using Android PdfRenderer. PCM audio and tool events travel over WebSocket through USB forwarding. A Node backend owns OpenAI Realtime credentials, product-scoped lexical retrieval, page images, validated document tools, and a curated DB-200H review. Page display is acknowledged by the client after rendering before the agent reports success.
+Kotlin / Compose XR renders two spatial panels and original PDFs using Android PdfRenderer. PCM audio and tool events travel over WebSocket through USB forwarding or the selected PC LAN address. A Node backend owns OpenAI Realtime credentials, product-scoped lexical retrieval, page images, validated document tools, and a curated DB-200H review. Page display is acknowledged by the client after rendering before the agent reports success.
 
 No camera identification, cloud deployment, authentication, or production repair workflow is included. Voice uses semantic end-of-turn detection while enabled, with acoustic echo cancellation when supported by the device. Switching products, leaving the app, or disconnecting stops the microphone; tap Start voice to resume. Retrieval is a small local index, and model answers still require source review. Manual contents are treated as reference data, not agent instructions.
 
@@ -52,7 +70,7 @@ The pump user alias P500219 maps to supplied manual P5002169 for VSX VSH/VSC/VSC
 ## Validation
 ```powershell
 cd backend
-node --test --test-isolation=none documents.test.mjs voice.test.mjs
+node --test --test-isolation=none documents.test.mjs voice.test.mjs network.test.mjs
 node evaluate-live.mjs
 node --env-file=../.env evaluate-continuous.mjs
 ```
@@ -65,6 +83,9 @@ Normal development should use Git commits and pushes. `scripts/github_checkpoint
 ## Change branches
 - `feature/aura-voice-document-name`: app display name and README branding.
 - `feature/continuous-voice`: built on the naming branch; automatic voice turns, speech interruptions, and a single start/end toggle.
+- `feature/lan-backend-connection`: based on merged main; saved USB/LAN selection and optional LAN backend binding.
+
+LAN validation: four JVM endpoint tests and seven backend tests pass, including HTTP/WebSocket access through loopback and local interface addresses. The Android build is installed, and an HTTP health request originating from the Aura puck over Wi-Fi reached the PC backend successfully. Run `./gradlew.bat testDebugUnitTest` for endpoint validation. The physical unplugged voice interaction is a separate device check.
 
 Continuous voice follows the [OpenAI VAD guide](https://developers.openai.com/api/docs/guides/realtime-vad) and [WebSocket interruption guidance](https://developers.openai.com/api/docs/guides/realtime-conversations). The client reports played audio when interrupted so unheard answer content can be truncated. An additional protocol test covers microphone gating, VAD configuration, interrupted audio, stopping, and restarting. Physical echo rejection depends on the Aura audio route and should be tested in the demo environment.
 

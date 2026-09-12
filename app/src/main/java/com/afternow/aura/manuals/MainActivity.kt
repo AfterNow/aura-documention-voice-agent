@@ -65,7 +65,7 @@ class MainActivity:ComponentActivity(){
       SpatialPanel(SubspaceModifier.width(480.dp).height(820.dp).movable(stickyPose=true).resizable(minimumSize=DpVolumeSize(420.dp,640.dp,0.dp),maximumSize=DpVolumeSize(900.dp,1200.dp,0.dp))) {
        Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){
         Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-         Row(verticalAlignment=Alignment.CenterVertically){Text("Aura Voice Document",fontSize=24.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(onClick={vm.connect()}){Text("Reconnect")}}
+         AppHeader(vm){vm.disconnect();finishAndRemoveTask()}
          Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){vm.products.forEach{p->
           FilterChip(selected=vm.selected?.id==p.id,onClick={vm.select(p)},label={Text(if(p.id=="vsx")"VSX" else p.name,fontSize=11.sp)})
          }}
@@ -78,11 +78,24 @@ class MainActivity:ComponentActivity(){
       }
      }
     }
-   }else Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){ManualsApp(vm)}
+   }else Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){ManualsApp(vm){vm.disconnect();finishAndRemoveTask()}}
   }
  }}
 }
-@Composable fun ManualsApp(vm:ManualViewModel){
+@Composable fun AppHeader(vm:ManualViewModel,onClose:()->Unit){
+ Column{
+  Row(verticalAlignment=Alignment.CenterVertically){
+   Text("Aura Voice Document",Modifier.weight(1f),fontSize=20.sp,fontWeight=FontWeight.Bold)
+   TextButton(onClick=onClose){Text("Close app",color=Muted)}
+  }
+  Row(verticalAlignment=Alignment.CenterVertically){
+   Text(vm.connectionLabel,Modifier.weight(1f),fontSize=11.sp,color=if(vm.connected)Mint else Warm)
+   TextButton(onClick={vm.interrupt();vm.connectionSettingsOpen=true}){Text("Connection")}
+   TextButton(onClick={vm.connect()}){Text("Reconnect")}
+  }
+ }
+}
+@Composable fun ManualsApp(vm:ManualViewModel,onClose:()->Unit){
  Column(Modifier.fillMaxSize().background(Ink).padding(24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)){
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
    Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(Mint),contentAlignment=Alignment.Center){Text("A",color=Ink,fontWeight=FontWeight.Black,fontSize=24.sp)}
@@ -90,8 +103,10 @@ class MainActivity:ComponentActivity(){
    Column{Text("Aura Voice Document",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("TECHNICAL COMPANION",fontSize=10.sp,color=Muted,letterSpacing=2.sp)}
    Spacer(Modifier.weight(1f))
    Box(Modifier.size(7.dp).background(if(vm.connected)Mint else Warm,RoundedCornerShape(7.dp)))
-   Spacer(Modifier.width(8.dp));Text(if(vm.connected)"CONNECTED VIA USB" else "DOCUMENTS OFFLINE",fontSize=11.sp,color=Muted,letterSpacing=1.sp)
+   Spacer(Modifier.width(8.dp));Text(if(vm.connected){if(vm.useLan)"CONNECTED VIA WI-FI" else "CONNECTED VIA USB"}else "DOCUMENTS OFFLINE",fontSize=11.sp,color=Muted,letterSpacing=1.sp)
    Spacer(Modifier.width(14.dp));TextButton(onClick={vm.connect()}){Text("Reconnect",color=Mint)}
+   TextButton(onClick={vm.interrupt();vm.connectionSettingsOpen=true}){Text("Connection")}
+   TextButton(onClick=onClose){Text("Close app",color=Muted)}
   }
   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){
    vm.products.forEach { p->
@@ -110,6 +125,12 @@ class MainActivity:ComponentActivity(){
  }
 }
 @Composable fun ConversationPanel(vm:ManualViewModel,modifier:Modifier=Modifier){
+ if(vm.connectionSettingsOpen){
+  Column(modifier.clip(RoundedCornerShape(20.dp)).background(Panel).verticalScroll(rememberScrollState()).padding(20.dp)){
+   ConnectionSettings(vm)
+  }
+  return
+ }
  val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->if(granted)vm.toggleRecording()}
  val context=LocalContext.current
  var input by remember{mutableStateOf("")}
@@ -148,6 +169,29 @@ class MainActivity:ComponentActivity(){
    OutlinedButton(onClick={vm.interrupt()},modifier=Modifier.height(52.dp),shape=RoundedCornerShape(13.dp)){Text("Stop",color=Muted)}
   }
   Text(if(vm.recording)"Microphone on · speak naturally, or tap End voice." else "Tap once to talk continuously. Tap again to stop.",fontSize=10.sp,color=Muted)
+ }
+}
+@Composable fun ConnectionSettings(vm:ManualViewModel){
+ var lan by remember{mutableStateOf(vm.useLan)}
+ var host by remember{mutableStateOf(vm.lanHost)}
+ var port by remember{mutableStateOf(vm.lanPort)}
+ var problem by remember{mutableStateOf<String?>(null)}
+ Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
+  Text("Backend connection",fontSize=22.sp,fontWeight=FontWeight.Bold)
+  Text("Current: ${vm.connectionLabel}",fontSize=12.sp,color=Muted)
+  Text("Reconnect uses the saved mode. Select Wi-Fi and save before unplugging the PC.",fontSize=13.sp,color=Muted)
+   Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+    FilterChip(selected=!lan,onClick={lan=false;problem=null},label={Text("USB (default)")})
+    FilterChip(selected=lan,onClick={lan=true;problem=null},label={Text("Wi-Fi / LAN")})
+   }
+   if(lan){
+    OutlinedTextField(host,{host=it;problem=null},Modifier.fillMaxWidth(),label={Text("PC local IP address")},placeholder={Text("192.168.1.42")},singleLine=true)
+    OutlinedTextField(port,{port=it;problem=null},Modifier.fillMaxWidth(),label={Text("Port")},singleLine=true)
+    Text("Use the same Wi-Fi as the PC, with its backend in LAN mode.",fontSize=11.sp,color=Muted)
+   }else Text("Uses the PC through USB and ADB forwarding on port 8787.",fontSize=11.sp,color=Muted)
+   problem?.let{Text(it,fontSize=11.sp,color=Warm)}
+   Button(onClick={problem=vm.configureConnection(lan,host,port);if(problem==null)vm.connectionSettingsOpen=false}){Text("Save & reconnect")}
+   TextButton(onClick={vm.connectionSettingsOpen=false}){Text("Back to conversation")}
  }
 }
 @Composable fun DocumentPanel(vm:ManualViewModel,modifier:Modifier=Modifier){

@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {networkInterfaces} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -182,7 +183,16 @@ Voice interaction is continuous while the user enables the microphone. Automatic
  });
  client.on('close',()=>closeUpstream());
 });
-server.listen(port,host,()=>console.log(`Aura Voice Document backend http://${host}:${port} | ${catalog.length} manuals | voice ${key?'configured':'needs OPENAI_API_KEY'}`));
+server.listen(port,host,()=>{
+ const actualPort=server.address().port;
+ console.log(`Aura Voice Document backend http://${host}:${actualPort} | ${catalog.length} manuals | voice ${key?'configured':'needs OPENAI_API_KEY'}`);
+ if(host==='0.0.0.0'){
+  for(const [name,addresses] of Object.entries(networkInterfaces()))for(const address of addresses||[]){
+   if(address.family==='IPv4'&&!address.internal)console.log(`LAN option: ${address.address}:${actualPort} (${name})`);
+  }
+  console.log('Use the PC address on the same network as Aura. LAN mode is for a trusted local network; it has no authentication or TLS.');
+ }
+});
 
 return {server,wss};
 }
