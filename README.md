@@ -1,4 +1,4 @@
-# AfterNow Manuals for Aura
+# Aura Voice Document
 
 Working hackathon Android XR voice companion: select one of three products, ask a question, and see the original manual page alongside the conversation. Both spatial panels support movement and resizing.
 

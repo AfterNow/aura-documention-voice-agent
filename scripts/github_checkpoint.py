@@ -14,8 +14,12 @@ def source_files():
   files.extend((ROOT/directory).rglob(pattern))
  return sorted(set(p for p in files if p.is_file()))
 def main():
- parser=argparse.ArgumentParser();parser.add_argument("message");args=parser.parse_args()
- head=api("git/ref/heads/main")["object"]["sha"]
+ parser=argparse.ArgumentParser();parser.add_argument("message");parser.add_argument("--branch",default="main");parser.add_argument("--base",default="main");args=parser.parse_args()
+ try:head=api(f"git/ref/heads/{args.branch}")["object"]["sha"]
+ except subprocess.CalledProcessError as exc:
+  if "404" not in exc.stderr:raise
+  head=api(f"git/ref/heads/{args.base}")["object"]["sha"]
+  api("git/refs",{"ref":f"refs/heads/{args.branch}","sha":head})
  tree=api(f"git/commits/{head}")["tree"]["sha"]
  old={x["path"]:x for x in api(f"git/trees/{tree}?recursive=1")["tree"]}
  import hashlib
@@ -29,6 +33,6 @@ def main():
  if not updates:print("No changed source files");return
  newtree=api("git/trees",{"base_tree":tree,"tree":updates})
  commit=api("git/commits",{"message":args.message,"tree":newtree["sha"],"parents":[head]})
- api("git/refs/heads/main",{"sha":commit["sha"],"force":False},"PATCH")
+ api(f"git/refs/heads/{args.branch}",{"sha":commit["sha"],"force":False},"PATCH")
  print("Pushed",commit["sha"],len(updates),"source files")
 if __name__=="__main__":main()

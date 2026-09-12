@@ -65,7 +65,7 @@ class MainActivity:ComponentActivity(){
       SpatialPanel(SubspaceModifier.width(480.dp).height(820.dp).movable(stickyPose=true).resizable(minimumSize=DpVolumeSize(420.dp,640.dp,0.dp),maximumSize=DpVolumeSize(900.dp,1200.dp,0.dp))) {
        Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){
         Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-         Row(verticalAlignment=Alignment.CenterVertically){Text("AfterNow",fontSize=24.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(onClick={vm.connect()}){Text("Reconnect")}}
+         Row(verticalAlignment=Alignment.CenterVertically){Text("Aura Voice Document",fontSize=24.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(onClick={vm.connect()}){Text("Reconnect")}}
          Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){vm.products.forEach{p->
           FilterChip(selected=vm.selected?.id==p.id,onClick={vm.select(p)},label={Text(if(p.id=="vsx")"VSX" else p.name,fontSize=11.sp)})
          }}
@@ -87,7 +87,7 @@ class MainActivity:ComponentActivity(){
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
    Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(Mint),contentAlignment=Alignment.Center){Text("A",color=Ink,fontWeight=FontWeight.Black,fontSize=24.sp)}
    Spacer(Modifier.width(12.dp))
-   Column{Text("AfterNow",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("TECHNICAL COMPANION",fontSize=10.sp,color=Muted,letterSpacing=2.sp)}
+   Column{Text("Aura Voice Document",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("TECHNICAL COMPANION",fontSize=10.sp,color=Muted,letterSpacing=2.sp)}
    Spacer(Modifier.weight(1f))
    Box(Modifier.size(7.dp).background(if(vm.connected)Mint else Warm,RoundedCornerShape(7.dp)))
    Spacer(Modifier.width(8.dp));Text(if(vm.connected)"CONNECTED VIA USB" else "DOCUMENTS OFFLINE",fontSize=11.sp,color=Muted,letterSpacing=1.sp)

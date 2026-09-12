@@ -36,7 +36,7 @@ wss.on('connection',client=>{
  const pending=new Map();
  const emit=(type,body={})=>{if(client.readyState===WebSocket.OPEN)client.send(JSON.stringify({type,...body}));};
  const send=(event)=>{if(upstream?.readyState===WebSocket.OPEN)upstream.send(JSON.stringify(event));};
- const instructions=()=>`You are the AfterNow technical documentation voice assistant in XREAL Aura glasses.
+ const instructions=()=>`You are the Aura Voice Document technical documentation voice assistant in XREAL Aura glasses.
 Speak English by default, concisely and naturally. Default to 2-4 sentences, then let the user ask more.
 Active product: ${JSON.stringify(product(selected))}. Visible PDF page: ${visiblePage}.
 Available products: ${catalog.map(p=>p.id+': '+p.name+' ('+p.kind+')').join('; ')}.
@@ -159,4 +159,4 @@ User voice is push-to-talk: wait for a submitted question; do not fill pauses wi
  });
  client.on('close',()=>closeUpstream());
 });
-server.listen(port,host,()=>console.log(`AfterNow backend http://${host}:${port} | ${catalog.length} manuals | voice ${key?'configured':'needs OPENAI_API_KEY'}`));
+server.listen(port,host,()=>console.log(`Aura Voice Document backend http://${host}:${port} | ${catalog.length} manuals | voice ${key?'configured':'needs OPENAI_API_KEY'}`));
