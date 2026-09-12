@@ -32,7 +32,7 @@ const tools=[
 ];
 wss.on('connection',client=>{
  let selected=catalog.find(p=>p.id==='db200h')?.id||catalog[0].id;
- let visiblePage=1,upstream=null,ready=false,generation=0,reviewStep=-1,activeResponse=false,audioBytes=0;
+ let visiblePage=1,upstream=null,ready=false,generation=0,reviewStep=-1,activeResponse=false,audioBytes=0,turn=0;
  const pending=new Map();
  const emit=(type,body={})=>{if(client.readyState===WebSocket.OPEN)client.send(JSON.stringify({type,...body}));};
  const send=(event)=>{if(upstream?.readyState===WebSocket.OPEN)upstream.send(JSON.stringify(event));};
@@ -47,7 +47,7 @@ The pump alias P500219 maps to Series VSX; its manual number is P5002169 and cov
 Use guided_review for the curated DB-200H walkthrough. Do not claim the equipment is safe, de-energized, inspected, or repaired based on conversation. The user is browsing documentation.
 No camera is connected to this app. You can see only manual pages retrieved through tools. Use select_product for a requested product switch.
 User voice is push-to-talk: wait for a submitted question; do not fill pauses with chatter.`;
- function cancel(){if(activeResponse)send({type:'response.cancel'});activeResponse=false;emit('audio.clear');}
+ function cancel(){turn++;if(activeResponse)send({type:'response.cancel'});activeResponse=false;pending.forEach(x=>x.resolve({ok:false,error:'Interrupted'}));pending.clear();emit('audio.clear');}
  function closeUpstream(){generation++;ready=false;upstream?.close();upstream=null;pending.forEach(x=>x.resolve({ok:false,error:'Session changed'}));pending.clear();}
  function connect(){
   closeUpstream();const epoch=generation;
@@ -69,18 +69,19 @@ User voice is push-to-talk: wait for a submitted question; do not fill pauses wi
     if(e.type==='conversation.item.input_audio_transcription.completed')emit('transcript.user',{text:e.transcript});
     if(e.type==='response.output_audio_transcript.done')emit('transcript.done',{text:e.transcript,itemId:e.item_id});
     if(e.type==='response.done'){
+     const workTurn=turn;
      activeResponse=false;
      const calls=e.response?.output?.filter(x=>x.type==='function_call')||[];
      if(!calls.length){emit('response.done');emit('status',{status:'Ready',voiceReady:true});}
      else {
       for(const call of calls){
-       if(epoch!==generation)return;
+       if(epoch!==generation||workTurn!==turn)return;
        let args,result;
        try{args=JSON.parse(call.arguments);result=await execute(call.name,args);}catch(err){result={ok:false,error:err.message};}
        if(epoch!==generation)return;
        send({type:'conversation.item.create',item:{type:'function_call_output',call_id:call.call_id,output:JSON.stringify(result)}});
       }
-      if(epoch===generation)send({type:'response.create'});
+      if(epoch===generation&&workTurn===turn)send({type:'response.create'});
      }
      if(e.response?.status==='failed')emit('error',{message:e.response.status_details?.error?.message||'Voice response failed'});
     }

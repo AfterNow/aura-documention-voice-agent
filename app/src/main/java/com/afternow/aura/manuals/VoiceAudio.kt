@@ -14,6 +14,7 @@ class VoiceAudio(private val context: Context, private val onChunk: (String)->Un
     private val recorderThread=Executors.newSingleThreadExecutor()
     private val playbackThread=Executors.newSingleThreadExecutor()
     private val epoch=AtomicInteger(0)
+    private val recordEpoch=AtomicInteger(0)
     @Volatile private var recording=false
     private var recorder:AudioRecord?=null
     private var echo:AcousticEchoCanceler?=null
@@ -32,18 +33,20 @@ class VoiceAudio(private val context: Context, private val onChunk: (String)->Un
             recorder=input
             if(AcousticEchoCanceler.isAvailable())echo=AcousticEchoCanceler.create(input.audioSessionId)?.apply{enabled=true}
             input.startRecording();recording=true
+            val recordGeneration=recordEpoch.incrementAndGet()
             recorderThread.execute {
                 val buffer=ByteArray(2400)
-                try{while(recording){val n=input.read(buffer,0,buffer.size);if(n>0&&recording)onChunk(Base64.encodeToString(buffer,0,n,Base64.NO_WRAP))}}
+                try{while(recording&&recordEpoch.get()==recordGeneration){val n=input.read(buffer,0,buffer.size);if(n>0&&recording&&recordEpoch.get()==recordGeneration)onChunk(Base64.encodeToString(buffer,0,n,Base64.NO_WRAP))}}
                 catch(e:Exception){if(recording)onError("Microphone error: ${e.message}")}
             }
             true
         }catch(e:Exception){onError("Microphone unavailable: ${e.message}");false}
     }
     fun stop(after:()->Unit={}) {
-        recording=false
-        try{recorder?.stop()}catch(_:Exception){}
-        recorderThread.execute{echo?.release();echo=null;recorder?.release();recorder=null;after()}
+        recording=false;recordEpoch.incrementAndGet()
+        val oldRecorder=recorder;val oldEcho=echo;recorder=null;echo=null
+        try{oldRecorder?.stop()}catch(_:Exception){}
+        recorderThread.execute{oldEcho?.release();oldRecorder?.release();after()}
     }
     fun play(base64:String) {
         val generation=epoch.get()

@@ -38,6 +38,9 @@ import androidx.xr.compose.subspace.layout.SubspaceModifier
 import androidx.xr.compose.subspace.layout.width
 import androidx.xr.compose.subspace.layout.height
 import androidx.xr.compose.subspace.layout.padding
+import androidx.xr.compose.subspace.layout.movable
+import androidx.xr.compose.subspace.layout.resizable
+import androidx.xr.compose.unit.DpVolumeSize
 
 private val Ink=Color(0xFF0C1117)
 private val Panel=Color(0xFF131C25)
@@ -51,10 +54,15 @@ class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{
   MaterialTheme(colorScheme=darkColorScheme(primary=Mint,background=Ink,surface=Panel,onPrimary=Ink,onSurface=Color(0xFFE7EFF5))){
    val vm:ManualViewModel=viewModel()
+   DisposableEffect(vm){
+    val observer=androidx.lifecycle.LifecycleEventObserver{_,event->if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP)vm.interrupt()}
+    lifecycle.addObserver(observer)
+    onDispose{lifecycle.removeObserver(observer)}
+   }
    if(LocalSpatialCapabilities.current.isSpatialUiEnabled){
     Subspace {
      SpatialRow {
-      SpatialPanel(SubspaceModifier.width(480.dp).height(820.dp)) {
+      SpatialPanel(SubspaceModifier.width(480.dp).height(820.dp).movable(stickyPose=true).resizable(minimumSize=DpVolumeSize(420.dp,640.dp,0.dp),maximumSize=DpVolumeSize(900.dp,1200.dp,0.dp))) {
        Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){
         Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
          Row(verticalAlignment=Alignment.CenterVertically){Text("AfterNow",fontSize=24.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(onClick={vm.connect()}){Text("Reconnect")}}
@@ -65,7 +73,7 @@ class MainActivity:ComponentActivity(){
         }
        }
       }
-      SpatialPanel(SubspaceModifier.padding(start=24.dp).width(760.dp).height(820.dp)) {
+      SpatialPanel(SubspaceModifier.padding(start=24.dp).width(760.dp).height(820.dp).movable(stickyPose=true).resizable(minimumSize=DpVolumeSize(480.dp,500.dp,0.dp),maximumSize=DpVolumeSize(1400.dp,1400.dp,0.dp))) {
        Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){DocumentPanel(vm,Modifier.fillMaxSize())}
       }
      }
@@ -164,19 +172,21 @@ class MainActivity:ComponentActivity(){
   }
  }
 }
+private data class RenderedPage(val productId:String,val number:Int,val bitmap:Bitmap)
 @Composable fun PdfPage(product:Product,number:Int,zoom:Float,request:String?,ack:(String?,Boolean)->Unit){
  val context=LocalContext.current
  var failure by remember(product.id,number){mutableStateOf<String?>(null)}
- val bitmap by produceState<Bitmap?>(null,product.id,number){
+ val rendered by produceState<RenderedPage?>(null,product.id,number){
   value=null
-  try{value=withContext(Dispatchers.IO){
+  try{value=RenderedPage(product.id,number,withContext(Dispatchers.IO){
    val f=File(context.cacheDir,product.file)
    if(!f.exists())context.assets.open("manuals/${product.file}").use{source->f.outputStream().use{source.copyTo(it)}}
    ParcelFileDescriptor.open(f,ParcelFileDescriptor.MODE_READ_ONLY).use{fd->PdfRenderer(fd).use{renderer->renderer.openPage(number-1).use{page->
     Bitmap.createBitmap(1700,(1700f*page.height/page.width).toInt(),Bitmap.Config.ARGB_8888).also{it.eraseColor(android.graphics.Color.WHITE);page.render(it,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)}
    }}}
-  }}catch(e:Exception){failure="Page could not be rendered: ${e.message}"}
+  })}catch(e:Exception){failure="Page could not be rendered: ${e.message}"}
  }
+ val bitmap=rendered?.takeIf{it.productId==product.id&&it.number==number}?.bitmap
  LaunchedEffect(bitmap,request,failure){if(bitmap!=null)ack(request,true)else if(failure!=null)ack(request,false)}
  BoxWithConstraints(Modifier.fillMaxSize()){
   val viewWidth=maxWidth

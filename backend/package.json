@@ -1,1 +1,14 @@
-{"name":"aura-manuals-backend","version":"0.1.0","private":true,"type":"module","scripts":{"start":"node --env-file-if-exists=.env server.mjs","test":"node --test"},"dependencies":{"ws":"^8.18.3"}}
+{
+  "name": "aura-manuals-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=../.env server.mjs",
+    "test": "node --test --test-isolation=none documents.test.mjs",
+    "evaluate": "node evaluate-live.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
