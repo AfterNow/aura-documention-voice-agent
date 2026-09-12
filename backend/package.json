@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node --env-file-if-exists=../.env server.mjs",
-    "test": "node --test --test-isolation=none documents.test.mjs",
+    "test": "node --test --test-isolation=none documents.test.mjs voice.test.mjs",
     "evaluate": "node evaluate-live.mjs"
   },
   "dependencies": {

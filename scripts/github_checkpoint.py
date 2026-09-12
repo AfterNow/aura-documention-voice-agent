@@ -10,7 +10,7 @@ def api(endpoint,payload=None,method=None):
  return json.loads(p.stdout)
 def source_files():
  files=[ROOT/n for n in [".gitignore","README.md","settings.gradle.kts","build.gradle.kts","gradle.properties","gradlew","gradlew.bat","backend/package.json","backend/pnpm-lock.yaml","backend/.env.example","app/build.gradle.kts","app/src/main/AndroidManifest.xml"]]
- for directory,pattern in [("app/src/main/java","*.kt"),("backend","*.mjs"),("scripts","*.py"),("scripts","*.ps1"),("docs","*.md"),("gradle/wrapper","*")]:
+ for directory,pattern in [("app/src/main/java","*.kt"),("backend","*.mjs"),("scripts","*.py"),("scripts","*.ps1"),("docs","*.md"),("manuals","*.pdf"),("manuals","*.md"),("gradle/wrapper","*")]:
   files.extend((ROOT/directory).rglob(pattern))
  return sorted(set(p for p in files if p.is_file()))
 def main():

@@ -142,12 +142,12 @@ class MainActivity:ComponentActivity(){
    TextButton(onClick={vm.ask(input);input=""},enabled=vm.voiceReady&&input.isNotBlank()){Text("Ask")}
   }
   Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
-   Button(onClick={if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==android.content.pm.PackageManager.PERMISSION_GRANTED)vm.toggleRecording()else permission.launch(Manifest.permission.RECORD_AUDIO)},enabled=vm.voiceReady,modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(13.dp),colors=ButtonDefaults.buttonColors(containerColor=if(vm.recording)Warm else Mint)){
-    Text(if(vm.recording)"■  Send question" else "●  Tap to talk",fontWeight=FontWeight.Bold)
+   Button(onClick={if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==android.content.pm.PackageManager.PERMISSION_GRANTED)vm.toggleRecording()else permission.launch(Manifest.permission.RECORD_AUDIO)},enabled=vm.voiceReady||vm.recording,modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(13.dp),colors=ButtonDefaults.buttonColors(containerColor=if(vm.recording)Warm else Mint)){
+    Text(if(vm.recording)"■  End voice" else "●  Start voice",fontWeight=FontWeight.Bold)
    }
    OutlinedButton(onClick={vm.interrupt()},modifier=Modifier.height(52.dp),shape=RoundedCornerShape(13.dp)){Text("Stop",color=Muted)}
   }
-  Text(if(vm.recording)"Listening · tap Send question when finished" else "Tap to begin, speak, then tap again to send.",fontSize=10.sp,color=Muted)
+  Text(if(vm.recording)"Microphone on · speak naturally, or tap End voice." else "Tap once to talk continuously. Tap again to stop.",fontSize=10.sp,color=Muted)
  }
 }
 @Composable fun DocumentPanel(vm:ManualViewModel,modifier:Modifier=Modifier){
