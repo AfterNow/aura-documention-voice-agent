@@ -10,12 +10,16 @@ def api(endpoint,payload=None,method=None):
  return json.loads(p.stdout)
 def source_files():
  files=[ROOT/n for n in [".gitignore","README.md","settings.gradle.kts","build.gradle.kts","gradle.properties","gradlew","gradlew.bat","backend/package.json","backend/pnpm-lock.yaml","backend/.env.example","app/build.gradle.kts","app/src/main/AndroidManifest.xml"]]
- for directory,pattern in [("app/src/main/java","*.kt"),("backend","*.mjs"),("scripts","*.py"),("scripts","*.ps1"),("docs","*.md"),("gradle/wrapper","*")]:
+ for directory,pattern in [("app/src/main/java","*.kt"),("backend","*.mjs"),("scripts","*.py"),("scripts","*.ps1"),("docs","*.md"),("manuals","*.pdf"),("manuals","*.md"),("gradle/wrapper","*")]:
   files.extend((ROOT/directory).rglob(pattern))
  return sorted(set(p for p in files if p.is_file()))
 def main():
- parser=argparse.ArgumentParser();parser.add_argument("message");args=parser.parse_args()
- head=api("git/ref/heads/main")["object"]["sha"]
+ parser=argparse.ArgumentParser();parser.add_argument("message");parser.add_argument("--branch",default="main");parser.add_argument("--base",default="main");args=parser.parse_args()
+ try:head=api(f"git/ref/heads/{args.branch}")["object"]["sha"]
+ except subprocess.CalledProcessError as exc:
+  if "404" not in exc.stderr:raise
+  head=api(f"git/ref/heads/{args.base}")["object"]["sha"]
+  api("git/refs",{"ref":f"refs/heads/{args.branch}","sha":head})
  tree=api(f"git/commits/{head}")["tree"]["sha"]
  old={x["path"]:x for x in api(f"git/trees/{tree}?recursive=1")["tree"]}
  import hashlib
@@ -29,6 +33,6 @@ def main():
  if not updates:print("No changed source files");return
  newtree=api("git/trees",{"base_tree":tree,"tree":updates})
  commit=api("git/commits",{"message":args.message,"tree":newtree["sha"],"parents":[head]})
- api("git/refs/heads/main",{"sha":commit["sha"],"force":False},"PATCH")
+ api(f"git/refs/heads/{args.branch}",{"sha":commit["sha"],"force":False},"PATCH")
  print("Pushed",commit["sha"],len(updates),"source files")
 if __name__=="__main__":main()

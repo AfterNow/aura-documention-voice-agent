@@ -65,7 +65,7 @@ class MainActivity:ComponentActivity(){
       SpatialPanel(SubspaceModifier.width(480.dp).height(820.dp).movable(stickyPose=true).resizable(minimumSize=DpVolumeSize(420.dp,640.dp,0.dp),maximumSize=DpVolumeSize(900.dp,1200.dp,0.dp))) {
        Surface(color=Ink,contentColor=Color(0xFFE7EFF5)){
         Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-         Row(verticalAlignment=Alignment.CenterVertically){Text("AfterNow",fontSize=24.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(onClick={vm.connect()}){Text("Reconnect")}}
+         Row(verticalAlignment=Alignment.CenterVertically){Text("Aura Voice Document",fontSize=24.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));TextButton(onClick={vm.connect()}){Text("Reconnect")}}
          Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){vm.products.forEach{p->
           FilterChip(selected=vm.selected?.id==p.id,onClick={vm.select(p)},label={Text(if(p.id=="vsx")"VSX" else p.name,fontSize=11.sp)})
          }}
@@ -87,7 +87,7 @@ class MainActivity:ComponentActivity(){
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
    Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(Mint),contentAlignment=Alignment.Center){Text("A",color=Ink,fontWeight=FontWeight.Black,fontSize=24.sp)}
    Spacer(Modifier.width(12.dp))
-   Column{Text("AfterNow",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("TECHNICAL COMPANION",fontSize=10.sp,color=Muted,letterSpacing=2.sp)}
+   Column{Text("Aura Voice Document",fontSize=22.sp,fontWeight=FontWeight.Bold);Text("TECHNICAL COMPANION",fontSize=10.sp,color=Muted,letterSpacing=2.sp)}
    Spacer(Modifier.weight(1f))
    Box(Modifier.size(7.dp).background(if(vm.connected)Mint else Warm,RoundedCornerShape(7.dp)))
    Spacer(Modifier.width(8.dp));Text(if(vm.connected)"CONNECTED VIA USB" else "DOCUMENTS OFFLINE",fontSize=11.sp,color=Muted,letterSpacing=1.sp)
@@ -142,12 +142,12 @@ class MainActivity:ComponentActivity(){
    TextButton(onClick={vm.ask(input);input=""},enabled=vm.voiceReady&&input.isNotBlank()){Text("Ask")}
   }
   Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
-   Button(onClick={if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==android.content.pm.PackageManager.PERMISSION_GRANTED)vm.toggleRecording()else permission.launch(Manifest.permission.RECORD_AUDIO)},enabled=vm.voiceReady,modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(13.dp),colors=ButtonDefaults.buttonColors(containerColor=if(vm.recording)Warm else Mint)){
-    Text(if(vm.recording)"■  Send question" else "●  Tap to talk",fontWeight=FontWeight.Bold)
+   Button(onClick={if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)==android.content.pm.PackageManager.PERMISSION_GRANTED)vm.toggleRecording()else permission.launch(Manifest.permission.RECORD_AUDIO)},enabled=vm.voiceReady||vm.recording,modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(13.dp),colors=ButtonDefaults.buttonColors(containerColor=if(vm.recording)Warm else Mint)){
+    Text(if(vm.recording)"■  End voice" else "●  Start voice",fontWeight=FontWeight.Bold)
    }
    OutlinedButton(onClick={vm.interrupt()},modifier=Modifier.height(52.dp),shape=RoundedCornerShape(13.dp)){Text("Stop",color=Muted)}
   }
-  Text(if(vm.recording)"Listening · tap Send question when finished" else "Tap to begin, speak, then tap again to send.",fontSize=10.sp,color=Muted)
+  Text(if(vm.recording)"Microphone on · speak naturally, or tap End voice." else "Tap once to talk continuously. Tap again to stop.",fontSize=10.sp,color=Muted)
  }
 }
 @Composable fun DocumentPanel(vm:ManualViewModel,modifier:Modifier=Modifier){
