@@ -5,7 +5,7 @@ from pypdf import PdfReader
 import pypdfium2 as pdfium
 ROOT=Path(__file__).resolve().parents[1]
 CATALOG=[
- {"id":"mlg202dr","name":"MLG-202DR","kind":"Industrial dryer","manufacturer":"American Dryer Corporation","file":"mlg202dr.pdf","offset":4,"revision":"113289-4","aliases":["dryer","MLG 202 DR"],"topics":[{"label":"202DR specifications","page":12},{"label":"Component identification","page":16},{"label":"Electrical information","page":29},{"label":"Routine maintenance","page":51}]},
+ {"id":"mlg202dr","name":"MLG-202DR","kind":"Industrial dryer","manufacturer":"American Dryer Corporation","file":"mlg202dr.pdf","offset":7,"revision":"113289-6 (ManualsLib wrapper: +3 PDF pages)","aliases":["dryer","MLG 202 DR"],"topics":[{"label":"202DR specifications","page":15},{"label":"Component identification","page":19},{"label":"Electrical information","page":32},{"label":"Routine maintenance","page":52}]},
  {"id":"db200h","name":"DB-200H","kind":"Ice dispenser","manufacturer":"Hoshizaki","file":"db200h.pdf","offset":0,"revision":"2001-06-05","aliases":["ice dispenser","DB 200 H"],"topics":[{"label":"Dimensions and connections","page":5},{"label":"Electrical connection","page":12},{"label":"Drain connection drawing","page":14},{"label":"Cleaning and maintenance","page":16}]},
  {"id":"vsx","name":"VSX / P500219","kind":"Centrifugal pump","manufacturer":"Bell & Gossett","file":"vsx.pdf","offset":3,"revision":"P5002169","aliases":["pump","P500219","P5002169","VSX"],"topics":[{"label":"Troubleshooting","page":24},{"label":"Seal cross-sections","page":31},{"label":"Exploded stuffing box","page":35},{"label":"Coupling alignment","page":11}]}
 ]
