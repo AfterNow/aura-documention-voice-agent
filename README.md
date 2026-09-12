@@ -47,7 +47,11 @@ The backend binds to loopback port 8787. `adb reverse tcp:8787 tcp:8787` connect
 2. Stop the existing backend, then run `./scripts/run-backend.ps1 -Lan`. This listens on port 8787 on the PC's network interfaces and prints their IPv4 addresses. USB loopback still works with this listener.
 3. In the app, open **Connection**, select **Wi-Fi / LAN**, enter the PC's Wi-Fi IPv4 address and port **8787**, then select **Save & reconnect**. The app remembers the mode and address across restarts.
 4. Start voice and verify an answer, then unplug the PC's USB cable. Keep the PC awake and backend running. If the PC address changes, update it in Connection.
-5. To return to USB, select **USB (default)** and **Save & reconnect**, reconnect the cable, and run `adb reverse tcp:8787 tcp:8787`.
+5. To return to USB, reconnect the PC cable, wait about three seconds, select **USB (default)**, and select **Save & reconnect**. If already in USB mode, tap **Reconnect**.
+
+The startup script watches connected ADB devices and restores forwarding within about three seconds after a cable reconnect, in both USB and LAN modes. It uses PowerShell 7's Start-ThreadJob and stops the watcher when the backend script exits. Select USB, wait briefly, then tap Reconnect. ADB must be on the PC's PATH and the device must authorize USB debugging. If starting Node directly, run `./scripts/watch-adb.ps1` in another terminal, or use the manual forwarding command above.
+
+If USB reconnect fails, run `adb devices` and confirm the puck is listed as `device`, then run `adb reverse tcp:8787 tcp:8787` and tap Reconnect. Unplugging removes this forwarding rule; selecting USB in the app cannot recreate it on the PC. Wi-Fi mode instead needs the saved PC address and a backend started with `-Lan`. Both connection modes have been confirmed working on the physical Aura device, including USB recovery after restoring the missing rule.
 
 The main header always shows the saved connection mode and has **Connection**, **Reconnect**, and **Close app** controls. Reconnect retries the saved address; it does not switch USB to Wi-Fi automatically. Connection opens a full scrollable settings panel, also opened after a failed USB connection. Close app stops audio, disconnects the backend, and removes the app task; launch Aura Voice Document again from the device's app launcher to restart.
 
