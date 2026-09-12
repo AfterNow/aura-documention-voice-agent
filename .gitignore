@@ -1,0 +1,16 @@
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+.env
+.env.*
+!.env.example
+backend/data/
+app/src/main/assets/manuals/
+node_modules/
+__pycache__/
+*.log
+work/
+*.jks
+*.keystore
