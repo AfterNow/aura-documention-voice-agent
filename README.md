@@ -2,6 +2,9 @@
 
 Working hackathon Android XR voice companion: select one of three products, ask a question, and see the original manual page alongside the conversation. Both spatial panels support movement and resizing.
 
+## License
+The project's original source code and documentation are licensed under the [MIT License](LICENSE). The third-party manufacturer PDFs in `manuals/` and their generated derivatives are excluded from this license and retain their respective owners' copyright notices and terms. Third-party dependencies retain their own licenses.
+
 ## Demo
 1. Keep the backend terminal running. Use USB forwarding by default, or configure Wi-Fi as described below.
 2. Select DB-200H, MLG-202DR, or VSX.
