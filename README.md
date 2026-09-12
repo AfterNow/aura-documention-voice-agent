@@ -49,6 +49,8 @@ The backend binds to loopback port 8787. `adb reverse tcp:8787 tcp:8787` connect
 4. Start voice and verify an answer, then unplug the PC's USB cable. Keep the PC awake and backend running. If the PC address changes, update it in Connection.
 5. To return to USB, select **USB (default)** and **Save & reconnect**, reconnect the cable, and run `adb reverse tcp:8787 tcp:8787`.
 
+The main header always shows the saved connection mode and has **Connection**, **Reconnect**, and **Close app** controls. Reconnect retries the saved address; it does not switch USB to Wi-Fi automatically. Connection opens a full scrollable settings panel, also opened after a failed USB connection. Close app stops audio, disconnects the backend, and removes the app task; launch Aura Voice Document again from the device's app launcher to restart.
+
 Use LAN mode on a trusted local network: this demo connection is unencrypted and unauthenticated. If Windows Firewall prompts for Node access, allow your private network. If connection fails, check firewall access to TCP 8787 and whether the Wi-Fi network blocks communication between devices. Do not expose this demo port to the internet. Starting the script without `-Lan` explicitly returns the backend to loopback-only binding. Changing connections stops the microphone; tap Start voice again after reconnecting.
 
 ## Architecture and scope
