@@ -52,7 +52,7 @@ The backend binds to loopback port 8787. `adb reverse tcp:8787 tcp:8787` connect
 Use LAN mode on a trusted local network: this demo connection is unencrypted and unauthenticated. If Windows Firewall prompts for Node access, allow your private network. If connection fails, check firewall access to TCP 8787 and whether the Wi-Fi network blocks communication between devices. Do not expose this demo port to the internet. Starting the script without `-Lan` explicitly returns the backend to loopback-only binding. Changing connections stops the microphone; tap Start voice again after reconnecting.
 
 ## Architecture and scope
-Kotlin / Compose XR renders two spatial panels and original PDFs using Android PdfRenderer. PCM audio and tool events travel over WebSocket through USB forwarding. A Node backend owns OpenAI Realtime credentials, product-scoped lexical retrieval, page images, validated document tools, and a curated DB-200H review. Page display is acknowledged by the client after rendering before the agent reports success.
+Kotlin / Compose XR renders two spatial panels and original PDFs using Android PdfRenderer. PCM audio and tool events travel over WebSocket through USB forwarding or the selected PC LAN address. A Node backend owns OpenAI Realtime credentials, product-scoped lexical retrieval, page images, validated document tools, and a curated DB-200H review. Page display is acknowledged by the client after rendering before the agent reports success.
 
 No camera identification, cloud deployment, authentication, or production repair workflow is included. Voice uses semantic end-of-turn detection while enabled, with acoustic echo cancellation when supported by the device. Switching products, leaving the app, or disconnecting stops the microphone; tap Start voice to resume. Retrieval is a small local index, and model answers still require source review. Manual contents are treated as reference data, not agent instructions.
 
@@ -74,6 +74,9 @@ Normal development should use Git commits and pushes. `scripts/github_checkpoint
 ## Change branches
 - `feature/aura-voice-document-name`: app display name and README branding.
 - `feature/continuous-voice`: built on the naming branch; automatic voice turns, speech interruptions, and a single start/end toggle.
+- `feature/lan-backend-connection`: based on merged main; saved USB/LAN selection and optional LAN backend binding.
+
+LAN validation: four JVM endpoint tests and seven backend tests pass, including HTTP/WebSocket access through loopback and local interface addresses. The Android build is installed, and an HTTP health request originating from the Aura puck over Wi-Fi reached the PC backend successfully. Run `./gradlew.bat testDebugUnitTest` for endpoint validation. The physical unplugged voice interaction is a separate device check.
 
 Continuous voice follows the [OpenAI VAD guide](https://developers.openai.com/api/docs/guides/realtime-vad) and [WebSocket interruption guidance](https://developers.openai.com/api/docs/guides/realtime-conversations). The client reports played audio when interrupted so unheard answer content can be truncated. An additional protocol test covers microphone gating, VAD configuration, interrupted audio, stopping, and restarting. Physical echo rejection depends on the Aura audio route and should be tested in the demo environment.
 
