@@ -9,7 +9,17 @@ $usbWatcher = $null
 $env:HOST = if ($Lan) { '0.0.0.0' } else { '127.0.0.1' }
 $env:PORT = '8787'
 try {
- $usbWatcher = Start-ThreadJob -FilePath (Join-Path $PSScriptRoot 'watch-adb.ps1')
+ try {
+  $watcherPath = Join-Path $PSScriptRoot 'watch-adb.ps1'
+  if (Get-Command Start-ThreadJob -ErrorAction SilentlyContinue) {
+   $usbWatcher = Start-ThreadJob -FilePath $watcherPath
+  } else {
+   # Windows PowerShell 5.1 includes Start-Job without extra modules.
+   $usbWatcher = Start-Job -FilePath $watcherPath
+  }
+ } catch {
+  Write-Warning 'USB auto-forwarding could not start. The backend will still run. After reconnecting USB, run: adb reverse tcp:8787 tcp:8787'
+ }
  if (-not $Lan) {
   & adb reverse tcp:8787 tcp:8787
   if ($LASTEXITCODE -ne 0) { throw 'ADB forwarding failed. Connect the device over USB, or use -Lan for Wi-Fi.' }
